@@ -1,11 +1,18 @@
 (ns beary-restful.core
   (:use [environ.core])
-  (:require [clojure.data.json :as json])
+  (:require [clojure.data.json :as json]))
 
 (defonce ^:const success-code 0)
 (defonce ^:const unauthorized-code 1)
 (defonce ^:const internal-error-code 2)
 (defonce ^:const failure-code 3)
+
+(defn ->int [s]
+  (cond
+   (string? s) (Integer/parseInt s)
+   (instance? Integer s) s
+   (instance? Long s) (.intValue ^Long s)
+   :else nil))
 
 ;; FIXME: better config
 (defonce in-production (Boolean/valueOf ^String (env :beary-production "true")))
@@ -35,7 +42,7 @@
   [name args & body]
   `(defn ~name [req#]
      (let [{:keys ~args :or {~'req req#}} (:params req#)
-           ~'uid (linedesigner-api.utils/->int (:uid req#))]
+           ~'uid (->int (:uid req#))]
        ~@body)))
 
 (defmacro def-signin-handler0 [name args & body]
@@ -45,7 +52,7 @@
        (if (or (not-empty (:uid req#)) (not in-production))
          (do
            (let [{:keys ~args :or {~'req req#}} (:params req#)
-                 ~'uid (linedesigner-api.utils/->int (:uid req#))]
+                 ~'uid (->int (:uid req#))]
              (do ~@body)))
          (fail 403 unauthorized-code "User doesn't sign in.")))))
 
@@ -59,7 +66,7 @@
               (second clauses))
             (throw (IllegalArgumentException.
                     "check-params requires an even number of forms")))
-          (cons 'linedesigner-api.handler.helper/check-params (next (next clauses))))))
+          (cons 'beary-restful.core/check-params (next (next clauses))))))
 
 (defn has-pre? [fdecl]
   (and (map? (first fdecl)) (:pre (first fdecl))))
@@ -90,10 +97,10 @@
                                     (next fdecl)
                                     fdecl)
                             handler (if signin?
-                                      `linedesigner-api.handler.helper/def-signin-handler0
-                                      `linedesigner-api.handler.helper/defhandler0)]
+                                      `beary-restful.core/def-signin-handler0
+                                      `beary-restful.core/defhandler0)]
                         (if pre
-                          (list handler (with-meta name m) args (concat (cons `linedesigner-api.handler.helper/check-params
+                          (list handler (with-meta name m) args (concat (cons `beary-restful.core/check-params
                                                                               pre)
                                                                         (list :else (cons 'do fdecl))))
                           (list* handler (with-meta name m) args fdecl)))))
@@ -102,8 +109,9 @@
 
 (defmacro defhandler
   [name & fdecl]
-  `(linedesigner-api.handler.helper/create-handler false ~name ~@fdecl))
+  `(beary-restful.core/create-handler false ~name ~@fdecl))
 
 (defmacro def-signin-handler
   [name & fdecl]
-  `(linedesigner-api.handler.helper/create-handler true ~name ~@fdecl))
+  `(beary-restful.core/create-handler true ~name ~@fdecl))
+

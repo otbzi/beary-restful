@@ -1,7 +1,7 @@
 (ns beary-restful.middleware
-  (:use [beary-restful.core])
   (:require [clojure.data.json :as json]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log])
+  (:use [beary-restful.core]))
 
 (defn- json-request?
   [req]
