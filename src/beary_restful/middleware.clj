@@ -1,5 +1,5 @@
 (ns beary-restful.middleware
-  (:use [beary-restufl.core])
+  (:use [beary-restful.core])
   (:require [clojure.data.json :as json]
             [clojure.tools.logging :as log]))
 
